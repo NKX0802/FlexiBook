@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 
 const STUDENT_LINKS = [
   { href: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/rooms',         label: 'Facilities',    icon: Building2 },
+  { href: '/facilities',    label: 'Facilities',    icon: Building2 },
   { href: '/favourites',    label: 'Favourites',    icon: Star },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/checkin',       label: 'QR Check-in',   icon: QrCode },

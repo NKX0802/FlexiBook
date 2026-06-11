@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Plus, Edit2, Trash2, X, Building2, Users, Tag, CheckCircle2, Upload, ImagePlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import AdminLayout from '@/components/AdminLayout'
@@ -7,7 +7,7 @@ import { FACILITIES } from '@/lib/fakeData'
 
 const BLANK = { facility_name: '', facility_capacity: '', facility_type: 'room', facility_status: 'open', facility_description: '', facility_image_url: '' }
 
-export default function AdminRoomsPage() {
+export default function AdminFacilitiesPage() {
   const [facilities, setFacilities] = useState(FACILITIES)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(BLANK)
@@ -67,7 +67,6 @@ export default function AdminRoomsPage() {
   return (
     <AdminLayout title="Manage Facilities">
 
-      {/* Header + add button */}
       <div className="flex items-center justify-between mb-5">
         <p className="text-sm text-gray-500">{facilities.length} facilities total</p>
         <button
@@ -147,12 +146,9 @@ export default function AdminRoomsPage() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModal(null)} />
-
-          {/* Modal card — flex-col so header/footer stay fixed, body scrolls */}
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 flex flex-col"
             style={{ maxHeight: 'min(90vh, 680px)' }}>
 
-            {/* Fixed header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
               <h2 className="font-bold text-gray-900 text-lg" style={{ fontFamily: 'Nunito, sans-serif' }}>
                 {modal === 'add' ? 'Add Facility' : 'Edit Facility'}
@@ -162,10 +158,8 @@ export default function AdminRoomsPage() {
               </button>
             </div>
 
-            {/* Scrollable body — pb-4 gives focus rings space at bottom */}
             <div className="overflow-y-auto flex-1 px-6 pb-4 pt-5">
               <div className="space-y-5">
-                {/* Image upload */}
                 <Field label="Facility image">
                   {imagePreview ? (
                     <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 group">
@@ -236,7 +230,6 @@ export default function AdminRoomsPage() {
               </div>
             </div>
 
-            {/* Fixed footer */}
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100 shrink-0">
               <button onClick={handleSave}
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 will-change-transform hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -284,7 +277,6 @@ export default function AdminRoomsPage() {
           font-size: 0.875rem;
           color: #111827;
           background: #ffffff;
-          /* Use outline instead of box-shadow — outline is NOT clipped by overflow */
           outline: 2px solid transparent;
           outline-offset: 2px;
           transition: border-color 0.15s, outline-color 0.15s;
@@ -310,4 +302,3 @@ function Field({ label, required, children }) {
     </div>
   )
 }
-

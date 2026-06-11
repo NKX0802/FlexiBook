@@ -19,7 +19,7 @@ const TYPE_COLORS = {
   equipment: 'bg-purple-100 text-purple-700',
 }
 
-export default function RoomDetailPage() {
+export default function FacilityDetailPage() {
   const router = useRouter()
   const { id } = router.query
 
@@ -36,7 +36,7 @@ export default function RoomDetailPage() {
       <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400 text-sm mb-4">Facility not found.</p>
-          <Link href="/rooms" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
+          <Link href="/facilities" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
         </div>
       </div>
     )
@@ -75,7 +75,7 @@ export default function RoomDetailPage() {
 
         {/* Back */}
         <Link
-          href="/rooms"
+          href="/facilities"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-emerald-700 transition-colors mb-5 group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -92,12 +92,10 @@ export default function RoomDetailPage() {
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
 
-            {/* Overlaid badges */}
             <div className="absolute bottom-4 left-4">
               <StatusBadge status={facility.facility_status} />
             </div>
 
-            {/* Favourite button */}
             <button
               onClick={toggleFav}
               className={`absolute top-4 right-4 p-2.5 rounded-full backdrop-blur-sm transition-all duration-200 will-change-transform hover:scale-110 active:scale-95 ${
@@ -134,7 +132,6 @@ export default function RoomDetailPage() {
                   Select a date & time slot
                 </h2>
 
-                {/* Date picker */}
                 <div className="mb-4">
                   <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
                     <Calendar size={14} />
@@ -149,7 +146,6 @@ export default function RoomDetailPage() {
                   />
                 </div>
 
-                {/* Time slots grid */}
                 <div className="mb-5">
                   <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-3">
                     <Clock size={14} />
@@ -179,7 +175,6 @@ export default function RoomDetailPage() {
                   </div>
                 </div>
 
-                {/* CTA */}
                 <button
                   onClick={handleBook}
                   disabled={!selectedSlot}

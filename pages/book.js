@@ -40,7 +40,7 @@ export default function BookPage() {
       <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400 text-sm mb-4">Invalid booking request.</p>
-          <Link href="/rooms" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
+          <Link href="/facilities" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
         </div>
       </div>
     )
@@ -51,7 +51,7 @@ export default function BookPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
         <Link
-          href={facility ? `/rooms/${facility.facility_id}` : '/rooms'}
+          href={facility ? `/facilities/${facility.facility_id}` : '/facilities'}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-emerald-700 transition-colors mb-5 group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -120,7 +120,7 @@ export default function BookPage() {
                 View My Bookings <ChevronRight size={15} />
               </Link>
               <Link
-                href="/rooms"
+                href="/facilities"
                 className="flex items-center justify-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 will-change-transform hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
               >
                 Browse More

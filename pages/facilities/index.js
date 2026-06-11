@@ -31,7 +31,6 @@ function CustomSelect({ value, onChange, options, minWidth = 'min-w-40' }) {
 
   return (
     <div ref={ref} className={`relative ${minWidth} w-full sm:w-auto`}>
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -45,7 +44,6 @@ function CustomSelect({ value, onChange, options, minWidth = 'min-w-40' }) {
         />
       </button>
 
-      {/* Dropdown panel */}
       {open && (
         <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl border border-gray-100 shadow-xl z-30 overflow-hidden py-1.5 min-w-full">
           {options.map(opt => {
@@ -73,7 +71,7 @@ function CustomSelect({ value, onChange, options, minWidth = 'min-w-40' }) {
   )
 }
 
-export default function RoomsPage() {
+export default function FacilitiesPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -107,7 +105,6 @@ export default function RoomsPage() {
 
         {/* Search + Filters */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-3 items-center">
-          {/* Search */}
           <div className="relative flex-1 w-full">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
@@ -119,7 +116,6 @@ export default function RoomsPage() {
             />
           </div>
 
-          {/* Type custom select */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <SlidersHorizontal size={15} className="text-gray-400 shrink-0 hidden sm:block" />
             <CustomSelect
@@ -130,7 +126,6 @@ export default function RoomsPage() {
             />
           </div>
 
-          {/* Status custom select */}
           <CustomSelect
             value={statusFilter}
             onChange={setStatusFilter}

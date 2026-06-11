@@ -24,7 +24,7 @@ export default function FacilityCard({ facility, isFavourited = false, onToggleF
   }
 
   return (
-    <Link href={`/rooms/${facility.facility_id}`} className="group block">
+    <Link href={`/facilities/${facility.facility_id}`} className="group block">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-shadow duration-300 hover:shadow-xl cursor-pointer h-full flex flex-col">
         {/* Image */}
         <div className="relative overflow-hidden h-44">

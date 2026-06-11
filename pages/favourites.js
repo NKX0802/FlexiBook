@@ -57,7 +57,7 @@ export default function FavouritesPage() {
               Tap the heart icon on any facility card to save it here for quick access.
             </p>
             <Link
-              href="/rooms"
+              href="/facilities"
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 will-change-transform hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               Browse Facilities

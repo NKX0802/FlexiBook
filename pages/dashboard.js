@@ -55,7 +55,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <Link
-            href="/rooms"
+            href="/facilities"
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 shrink-0"
           >
             <Plus size={15} /> Add Booking
@@ -96,7 +96,7 @@ export default function DashboardPage() {
               <>
                 <p className="text-xs text-gray-400 mb-5">Start by browsing available facilities.</p>
                 <Link
-                  href="/rooms"
+                  href="/facilities"
                   className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <Plus size={15} /> Browse Facilities

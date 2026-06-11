@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 
 const ADMIN_LINKS = [
   { href: '/admin/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/admin/rooms',         label: 'Facilities',    icon: Building2 },
+  { href: '/admin/facilities',    label: 'Facilities',    icon: Building2 },
   { href: '/admin/bookings',      label: 'Bookings',      icon: Calendar },
   { href: '/admin/noshows',       label: 'No-Shows',      icon: AlertCircle },
   { href: '/admin/notifications', label: 'Notifications', icon: Bell },

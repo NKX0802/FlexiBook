@@ -10,7 +10,7 @@ import { useRole } from '@/lib/roleContext'
 
 const ADMIN_LINKS = [
   { href: '/admin/dashboard',      label: 'Dashboard',         icon: LayoutDashboard },
-  { href: '/admin/rooms',          label: 'Manage Facilities', icon: Building2 },
+  { href: '/admin/facilities',     label: 'Manage Facilities', icon: Building2 },
   { href: '/admin/bookings',       label: 'Manage Bookings',   icon: Calendar },
   { href: '/admin/noshows',        label: 'No-Show Report',    icon: AlertCircle },
   { href: '/admin/notifications',  label: 'Notifications',     icon: Bell },
@@ -23,13 +23,13 @@ export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <aside className={`hidden md:flex flex-col bg-gray-900 text-white transition-all duration-300 ease-in-out flex-shrink-0
+    <aside className={`hidden md:flex flex-col bg-gray-900 text-white transition-all duration-300 ease-in-out shrink-0
       ${collapsed ? 'w-16' : 'w-60'}`}
       style={{ minHeight: '100vh' }}
     >
       {/* Logo */}
       <div className={`flex items-center gap-2.5 px-4 py-5 border-b border-gray-800 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
           <Building size={16} className="text-white" />
         </div>
         {!collapsed && (
@@ -62,7 +62,7 @@ export default function AdminSidebar() {
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white active:bg-gray-700'
                 }`}
             >
-              <Icon size={18} className="flex-shrink-0" />
+              <Icon size={18} className="shrink-0" />
               {!collapsed && <span>{label}</span>}
               {!collapsed && active && (
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />
