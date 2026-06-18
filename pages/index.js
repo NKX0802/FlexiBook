@@ -20,12 +20,17 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-2xl mx-auto text-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border ${
-              dark
-                ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700'
-                : 'bg-emerald-100 text-emerald-800 border-transparent'
-            }`}>
-              <Zap size={14} className={dark ? 'text-emerald-400' : 'text-emerald-600'} />
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border ${
+                dark
+                  ? "bg-emerald-900/40 text-emerald-300 border-emerald-700"
+                  : "bg-emerald-100 text-emerald-800 border-transparent"
+              }`}
+            >
+              <Zap
+                size={14}
+                className={dark ? "text-emerald-400" : "text-emerald-600"}
+              />
               Smart Campus Facility Booking
             </div>
 
@@ -38,11 +43,11 @@ export default function HomePage() {
             >
               Book campus facilities{" "}
               <span className="inline-block relative group cursor-default">
-                <span className="text-emerald-500 transition-colors duration-300 group-hover:text-emerald-400">
+                <span className="text-emerald-500 transition duration-300 group-hover:text-emerald-400">
                   effortlessly
                 </span>
                 <span className="absolute -bottom-1.5 left-0 h-1 w-0 group-hover:w-full bg-emerald-300 rounded-full transition-all duration-300 delay-75" />
-                <span className="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full bg-emerald-500 rounded-full transition-all duration-300" />
+                <span className="hover:scale-120 absolute bottom-0 left-0 h-1 w-0 group-hover:w-full bg-emerald-500 rounded-full transition-all duration-300" />
               </span>
             </h1>
 
@@ -124,8 +129,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
     </div>
   );
 }

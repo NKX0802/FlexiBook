@@ -173,16 +173,44 @@ so it's always clear what they link to.
 
 ## 7. Module ownership (who builds what)
 
-| Member                  | Module                  | Pages                                                                                                          |
-| ----------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Leader (Khai Xiang)** | Setup + Auth + Profiles | landing, login, register, user profile, admin profile + project scaffolding, shared menu, DB setup, deployment |
-| **Member 2**            | Facilities & Favourites | facility list (search/filter), facility details, favourites                                                    |
-| **Member 3**            | Booking (hardest logic) | book slot (+ confirmation), booking history — owns double-booking prevention & group-size rule                 |
-| **Member 4**            | QR & Notifications      | QR check-in, user notifications, admin send-notifications — owns the 15-minute no-show rule                    |
-| **Member 5**            | Admin management        | dashboard, manage facilities, manage bookings, no-show report                                                  |
+Member 1 : Auth + Profile + Setup （Ng Khai Xiang）
+Pages:
+Landing page (/)
+Login
+Register
+User Profile
+Admin Profile
+Manage Profile (edit details)
+User Navbar
+Admin Navbar
+404 Page
+403 Page
+Also: project scaffolding, shared menu, database setup, Vercel deployment, integration.
 
-Each member works on their own page files so they don't collide. The shared
-foundation (DB tables, login, navigation menu) is built first by the leader.
+Member 2: Facilities, Favourites + User Dashboard (Ng Thong Zhe)
+Pages:
+User Dashboard (landing after login — upcoming bookings + quick links)
+Facility List (with search + filter)
+Facility Details
+Favourites (add/remove)
+
+Member 3: Booking (this is the hardest module — they choose who takes it) (Koay Kit Jin)
+Pages:
+Make Booking (with double-booking check + capacity check)
+View & Cancel Booking (user views their bookings, cancels own)
+
+Member 4: QR Check-In + Notifications (Pang Ming Shen)
+Pages:
+QR Check-In (scan + 15-minute / no-show logic)
+User Notifications (view notifications)
+Admin Send Notification (send to one user or all)
+
+Member 5: Admin Management (Tan Chang Min)
+Pages:
+Admin Dashboard (stats + charts)
+Manage Facilities (add / edit / close / remove)
+Manage Bookings (admin emergency-cancel with reason + notify user)
+No-Show Report (users with too many no-shows)
 
 ---
 
