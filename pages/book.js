@@ -1,41 +1,124 @@
-﻿import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import {
   ArrowLeft, Building2, Calendar, Clock, Users,
-  CheckCircle2, ChevronRight,
+  CheckCircle2, ChevronRight, Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { FACILITIES, FAKE_STUDENT } from '@/lib/fakeData'
 
 export default function BookPage() {
   const router = useRouter()
   const { facilityId, date, slot } = router.query
 
-  const facility = FACILITIES.find(f => f.facility_id === Number(facilityId))
-
+  const [facility, setFacility] = useState(null)
+  const [user, setUser] = useState(null)
   const [groupSize, setGroupSize] = useState(1)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
   const [bookingId, setBookingId] = useState(null)
+  const [error, setError] = useState(null)
+
+  // Fetch facility info and current user once router is ready
+  useEffect(() => {
+    if (!router.isReady || !facilityId) return
+
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+      try {
+        const [facilityRes, meRes] = await Promise.all([
+          fetch(`/api/facilities/${facilityId}`),
+          fetch('/api/me'),
+        ])
+
+        const facilityData = await facilityRes.json()
+        const meData = await meRes.json()
+
+        if (!facilityData.success) {
+          setError('Facility not found.')
+          return
+        }
+        setFacility(facilityData.data)
+
+        if (!meData.success) {
+          setError('You must be logged in to make a booking.')
+          return
+        }
+        setUser(meData.data)
+      } catch {
+        setError('Failed to load booking details.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [router.isReady, facilityId])
 
   async function handleConfirm(e) {
     e.preventDefault()
-    if (!facility) return
+    if (!facility || !user) return
+
     if (groupSize < 1 || groupSize > facility.facility_capacity) {
       toast.error(`Group size must be between 1 and ${facility.facility_capacity}.`)
       return
     }
-    setLoading(true)
-    await new Promise(r => setTimeout(r, 1000))
-    const fakeId = Math.floor(Math.random() * 9000) + 1000
-    setBookingId(fakeId)
-    setConfirmed(true)
-    setLoading(false)
-    toast.success('Booking confirmed! Check your notifications.')
+
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facility_id: facility.facility_id,
+          booking_date: date,
+          booking_time_slot: slot,
+          booking_group_size: groupSize,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        setBookingId(data.data.booking_id)
+        setConfirmed(true)
+        toast.success('Booking confirmed! Check your notifications.')
+      } else {
+        toast.error(data.error || 'Failed to create booking.')
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (!facility && router.isReady) {
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-emerald-500" />
+      </div>
+    )
+  }
+
+  // ── Error state ──────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400 text-sm mb-4">{error}</p>
+          <Link href="/facilities" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Missing query params ─────────────────────────────────────────────────
+  if (!facility || !date || !slot) {
     return (
       <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
         <div className="text-center">
@@ -133,13 +216,11 @@ export default function BookPage() {
             {/* Summary card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="font-bold text-gray-700 text-sm uppercase tracking-widest mb-3">Booking Summary</h2>
-              {facility && (
-                <div className="space-y-2">
-                  <Detail icon={Building2} label="Facility" value={facility.facility_name} />
-                  <Detail icon={Calendar} label="Date" value={date} />
-                  <Detail icon={Clock} label="Time Slot" value={slot} />
-                </div>
-              )}
+              <div className="space-y-2">
+                <Detail icon={Building2} label="Facility" value={facility.facility_name} />
+                <Detail icon={Calendar} label="Date" value={date} />
+                <Detail icon={Clock} label="Time Slot" value={slot} />
+              </div>
             </div>
 
             {/* Group size form */}
@@ -147,9 +228,7 @@ export default function BookPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Group size
-                  {facility && (
-                    <span className="ml-1 text-xs font-normal text-gray-400">(max {facility.facility_capacity})</span>
-                  )}
+                  <span className="ml-1 text-xs font-normal text-gray-400">(max {facility.facility_capacity})</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <button
@@ -162,7 +241,7 @@ export default function BookPage() {
                   <span className="text-2xl font-bold text-gray-900 w-8 text-center">{groupSize}</span>
                   <button
                     type="button"
-                    onClick={() => setGroupSize(g => Math.min(facility?.facility_capacity || 99, g + 1))}
+                    onClick={() => setGroupSize(g => Math.min(facility.facility_capacity, g + 1))}
                     className="w-9 h-9 rounded-xl bg-gray-100 text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 active:scale-90 transition-all"
                   >
                     +
@@ -171,26 +250,28 @@ export default function BookPage() {
                 </div>
               </div>
 
-              {/* Booked by */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Booked by</label>
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200">
-                  <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    {FAKE_STUDENT.user_name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{FAKE_STUDENT.user_name}</p>
-                    <p className="text-xs text-gray-400">{FAKE_STUDENT.user_email}</p>
+              {/* Booked by (real user) */}
+              {user && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Booked by</label>
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {user.user_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{user.user_name}</p>
+                      <p className="text-xs text-gray-400">{user.user_email}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 will-change-transform hover:scale-105 active:scale-95 disabled:opacity-60 disabled:scale-100 transition-all duration-200 shadow-md shadow-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
               >
-                {loading ? (
+                {submitting ? (
                   <span className="flex items-center gap-2">
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
@@ -219,4 +300,3 @@ function Detail({ icon: Icon, label, value }) {
     </div>
   )
 }
-

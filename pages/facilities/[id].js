@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import {
   ArrowLeft, Users, Heart, Calendar, Clock,
-  AlertCircle, ChevronRight,
+  AlertCircle, ChevronRight, Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import StatusBadge from '@/components/StatusBadge'
-import { FACILITIES, FAVOURITES, TIME_SLOTS, BOOKED_SLOTS } from '@/lib/fakeData'
+import { TIME_SLOTS } from '@/lib/fakeData'
 
 function getTodayString() {
   return new Date().toISOString().split('T')[0]
@@ -23,38 +23,102 @@ export default function FacilityDetailPage() {
   const router = useRouter()
   const { id } = router.query
 
-  const facility = FACILITIES.find(f => f.facility_id === Number(id))
-
-  const [isFav, setIsFav] = useState(
-    FAVOURITES.some(f => f.facility_id === Number(id))
-  )
+  const [facility, setFacility] = useState(null)
+  const [bookedSlots, setBookedSlots] = useState([])
+  const [isFav, setIsFav] = useState(false)
   const [selectedDate, setSelectedDate] = useState(getTodayString())
   const [selectedSlot, setSelectedSlot] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [favLoading, setFavLoading] = useState(false)
 
-  if (!facility) {
-    return (
-      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-400 text-sm mb-4">Facility not found.</p>
-          <Link href="/facilities" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
-        </div>
-      </div>
-    )
-  }
+  // Fetch facility details on mount (once id is available)
+  useEffect(() => {
+    if (!id) return
 
-  function isSlotBooked(slot) {
-    return BOOKED_SLOTS.some(
-      b => b.facility_id === facility.facility_id &&
-           b.date === selectedDate &&
-           b.slot === slot
-    )
-  }
+    async function fetchFacility() {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/facilities/${id}?booking_date=${selectedDate}`)
+        const data = await res.json()
+        if (!data.success) {
+          setError('Facility not found.')
+          return
+        }
+        setFacility(data.data)
+        setBookedSlots(data.data.booked_slots || [])
+        setIsFav(!!data.data.is_favourited)
+      } catch {
+        setError('Failed to load facility.')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  function toggleFav() {
-    setIsFav(f => !f)
-    toast(isFav ? 'Removed from favourites' : 'Added to favourites!', {
-      icon: isFav ? '💔' : '⭐',
-    })
+    fetchFacility()
+  // Only re-run when id changes — date changes handled separately below
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  // Re-fetch booked slots whenever the selected date changes (after initial load)
+  useEffect(() => {
+    if (!id || loading) return
+
+    async function fetchSlots() {
+      setSlotsLoading(true)
+      try {
+        const res = await fetch(`/api/facilities/${id}?booking_date=${selectedDate}`)
+        const data = await res.json()
+        if (data.success) {
+          setBookedSlots(data.data.booked_slots || [])
+        }
+      } catch {
+        // silently ignore slot fetch errors
+      } finally {
+        setSlotsLoading(false)
+      }
+    }
+
+    fetchSlots()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate])
+
+  async function toggleFav() {
+    if (favLoading) return
+    setFavLoading(true)
+    try {
+      let res
+      if (isFav) {
+        res = await fetch(`/api/favourites?facility_id=${id}`, { method: 'DELETE' })
+      } else {
+        res = await fetch('/api/favourites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ facility_id: Number(id) }),
+        })
+      }
+
+      if (res.status === 401) {
+        toast.error('Please log in to save favourites.')
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        setIsFav(f => !f)
+        toast(isFav ? 'Removed from favourites' : 'Added to favourites!', {
+          icon: isFav ? '💔' : '⭐',
+        })
+      } else {
+        toast.error(data.error || 'Failed to update favourites.')
+      }
+    } catch {
+      toast.error('Something went wrong.')
+    } finally {
+      setFavLoading(false)
+    }
   }
 
   function handleBook() {
@@ -64,6 +128,27 @@ export default function FacilityDetailPage() {
     }
     router.push(
       `/book?facilityId=${facility.facility_id}&date=${selectedDate}&slot=${encodeURIComponent(selectedSlot)}`
+    )
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-emerald-500" />
+      </div>
+    )
+  }
+
+  // ── Error / not found ────────────────────────────────────────────────────
+  if (error || !facility) {
+    return (
+      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400 text-sm mb-4">{error || 'Facility not found.'}</p>
+          <Link href="/facilities" className="text-emerald-600 font-semibold hover:underline">← Back to Facilities</Link>
+        </div>
+      </div>
     )
   }
 
@@ -86,7 +171,7 @@ export default function FacilityDetailPage() {
           {/* Hero image */}
           <div className="relative h-56 sm:h-72 overflow-hidden">
             <img
-              src={facility.facility_image_url}
+              src={facility.facility_image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80'}
               alt={facility.facility_name}
               className="w-full h-full object-cover"
             />
@@ -98,7 +183,8 @@ export default function FacilityDetailPage() {
 
             <button
               onClick={toggleFav}
-              className={`absolute top-4 right-4 p-2.5 rounded-full backdrop-blur-sm transition-all duration-200 will-change-transform hover:scale-110 active:scale-95 ${
+              disabled={favLoading}
+              className={`absolute top-4 right-4 p-2.5 rounded-full backdrop-blur-sm transition-all duration-200 will-change-transform hover:scale-110 active:scale-95 disabled:opacity-70 ${
                 isFav ? 'bg-red-500 text-white shadow-lg' : 'bg-white/80 text-gray-400 hover:text-red-500'
               }`}
             >
@@ -129,7 +215,7 @@ export default function FacilityDetailPage() {
             {facility.facility_status === 'open' ? (
               <div className="border-t border-gray-100 pt-5">
                 <h2 className="font-bold text-gray-800 mb-4" style={{ fontFamily: 'Nunito, sans-serif' }}>
-                  Select a date & time slot
+                  Select a date &amp; time slot
                 </h2>
 
                 <div className="mb-4">
@@ -150,15 +236,16 @@ export default function FacilityDetailPage() {
                   <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-3">
                     <Clock size={14} />
                     Available time slots
+                    {slotsLoading && <Loader2 size={12} className="animate-spin text-emerald-400 ml-1" />}
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                     {TIME_SLOTS.map(slot => {
-                      const booked = isSlotBooked(slot)
+                      const booked = bookedSlots.includes(slot)
                       const selected = selectedSlot === slot
                       return (
                         <button
                           key={slot}
-                          disabled={booked}
+                          disabled={booked || slotsLoading}
                           onClick={() => setSelectedSlot(slot)}
                           className={`py-2.5 px-2 rounded-xl text-xs font-semibold text-center transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400
                             ${booked

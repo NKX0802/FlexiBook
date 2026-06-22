@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, SlidersHorizontal, Building2, ChevronDown, Check } from 'lucide-react'
+import { Search, SlidersHorizontal, Building2, ChevronDown, Check, Loader2 } from 'lucide-react'
 import FacilityCard from '@/components/FacilityCard'
-import { FACILITIES, FAVOURITES } from '@/lib/fakeData'
+import toast from 'react-hot-toast'
 
 const TYPE_OPTIONS = [
   { value: 'all',       label: 'All Types',  dot: 'bg-gray-400'    },
@@ -75,21 +75,80 @@ export default function FacilitiesPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [favourites, setFavourites] = useState(FAVOURITES.map(f => f.facility_id))
+  const [facilities, setFacilities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  function toggleFavourite(id) {
-    setFavourites(prev =>
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-    )
+  // Fetch facilities from the real API
+  useEffect(() => {
+    async function fetchFacilities() {
+      setLoading(true)
+      setError(null)
+      try {
+        const params = new URLSearchParams()
+        if (search) params.set('search', search)
+        if (typeFilter !== 'all') params.set('type', typeFilter)
+        if (statusFilter !== 'all') params.set('status', statusFilter)
+
+        const res = await fetch(`/api/facilities?${params.toString()}`)
+        const data = await res.json()
+        if (data.success) {
+          setFacilities(data.data)
+        } else {
+          setError('Failed to load facilities.')
+        }
+      } catch {
+        setError('Failed to load facilities.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Debounce search input slightly
+    const timer = setTimeout(fetchFacilities, search ? 300 : 0)
+    return () => clearTimeout(timer)
+  }, [search, typeFilter, statusFilter])
+
+  async function toggleFavourite(facilityId, currentlyFavourited) {
+    try {
+      let res
+      if (currentlyFavourited) {
+        res = await fetch(`/api/favourites?facility_id=${facilityId}`, { method: 'DELETE' })
+      } else {
+        res = await fetch('/api/favourites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ facility_id: facilityId }),
+        })
+      }
+      const data = await res.json()
+
+      if (res.status === 401) {
+        toast.error('Please log in to save favourites.')
+        return
+      }
+
+      if (data.success) {
+        // Update is_favourited in local state immediately
+        setFacilities(prev =>
+          prev.map(f =>
+            f.facility_id === facilityId
+              ? { ...f, is_favourited: currentlyFavourited ? 0 : 1 }
+              : f
+          )
+        )
+        if (currentlyFavourited) {
+          toast('Removed from favourites', { icon: '💔' })
+        } else {
+          toast.success('Added to favourites!')
+        }
+      } else {
+        toast.error(data.error || 'Failed to update favourites.')
+      }
+    } catch {
+      toast.error('Something went wrong.')
+    }
   }
-
-  const filtered = FACILITIES.filter(f => {
-    const matchSearch = f.facility_name.toLowerCase().includes(search.toLowerCase()) ||
-      (f.facility_type || '').toLowerCase().includes(search.toLowerCase())
-    const matchType = typeFilter === 'all' || f.facility_type === typeFilter
-    const matchStatus = statusFilter === 'all' || f.facility_status === statusFilter
-    return matchSearch && matchType && matchStatus
-  })
 
   return (
     <div className="min-h-screen bg-green-50 pt-16">
@@ -134,37 +193,56 @@ export default function FacilitiesPage() {
           />
         </div>
 
-        {/* Results count */}
-        <p className="text-xs text-gray-400 mb-4">
-          Showing <span className="font-semibold text-gray-600">{filtered.length}</span> of {FACILITIES.length} facilities
-        </p>
-
-        {/* Grid */}
-        {filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-            {filtered.map(f => (
-              <FacilityCard
-                key={f.facility_id}
-                facility={f}
-                isFavourited={favourites.includes(f.facility_id)}
-                onToggleFavourite={toggleFavourite}
-              />
-            ))}
+        {/* Loading */}
+        {loading ? (
+          <div className="flex justify-center py-24">
+            <Loader2 size={28} className="animate-spin text-emerald-400" />
           </div>
-        ) : (
+        ) : error ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-              <Building2 size={28} className="text-gray-300" />
-            </div>
-            <h3 className="font-semibold text-gray-500 mb-1">No facilities found</h3>
-            <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
+            <p className="text-sm text-red-400 mb-3">{error}</p>
             <button
               onClick={() => { setSearch(''); setTypeFilter('all'); setStatusFilter('all') }}
-              className="mt-4 px-4 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 active:bg-emerald-200 transition-all will-change-transform hover:scale-105 active:scale-95"
+              className="px-4 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-all"
             >
-              Clear filters
+              Try again
             </button>
           </div>
+        ) : (
+          <>
+            {/* Results count */}
+            <p className="text-xs text-gray-400 mb-4">
+              Showing <span className="font-semibold text-gray-600">{facilities.length}</span> facilities
+            </p>
+
+            {/* Grid */}
+            {facilities.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                {facilities.map(f => (
+                  <FacilityCard
+                    key={f.facility_id}
+                    facility={f}
+                    isFavourited={!!f.is_favourited}
+                    onToggleFavourite={(id) => toggleFavourite(id, !!f.is_favourited)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+                  <Building2 size={28} className="text-gray-300" />
+                </div>
+                <h3 className="font-semibold text-gray-500 mb-1">No facilities found</h3>
+                <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
+                <button
+                  onClick={() => { setSearch(''); setTypeFilter('all'); setStatusFilter('all') }}
+                  className="mt-4 px-4 py-2 text-sm font-semibold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 active:bg-emerald-200 transition-all will-change-transform hover:scale-105 active:scale-95"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

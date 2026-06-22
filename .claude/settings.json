@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(node _check_admin.mjs)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(gh pr *)",
+      "Bash(cd \"/c/Users/PREDATOR/CP-Gei\" && find . -maxdepth 3 -type d | grep -v node_modules | grep -v .git)",
+      "Read(//c/c/Users/PREDATOR/**)",
+      "Bash(node -e \"require\\('./pages/_app.js'\\)\")",
+      "Bash(npx next *)",
+      "Bash(tail -5 /tmp/next-dev.log)",
+      "Read(//tmp/**)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -X POST http://localhost:3000/api/register -H \"Content-Type: application/json\" -d '{\"name\":\"Debug Test\",\"email\":\"debugtest123@campus.edu.my\",\"password\":\"testpass123\"}')",
+      "Bash(node -e ' *)"
     ]
   }
 }
