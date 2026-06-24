@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+      .sign(new TextEncoder().encode(process.env.AUTH_SECRET));
 
     res.setHeader(
       "Set-Cookie",

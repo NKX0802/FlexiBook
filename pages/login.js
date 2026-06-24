@@ -1,5 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { Mail, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft, User, Shield } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRole } from '@/lib/roleContext'
@@ -30,8 +31,9 @@ const DEMO_ACCOUNTS = [
 ]
 
 export default function LoginPage() {
-  const { switchRole } = useRole()
+  const { refreshRole } = useRole()
   const { dark } = useTheme()
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -49,14 +51,34 @@ export default function LoginPage() {
       toast.error('Please enter your email and password.')
       return
     }
+
     setLoading(true)
-    await new Promise(r => setTimeout(r, 900))
-    const match = DEMO_ACCOUNTS.find(a => a.email === email && a.password === password)
-    if (match) {
-      toast.success(`Welcome back, ${match.name.split(' ')[0]}!`)
-      switchRole(match.role)
-    } else {
-      toast.error('Invalid email or password.')
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'Invalid email or password.')
+        setLoading(false)
+        return
+      }
+
+      toast.success(`Welcome back, ${data.data.user_name.split(' ')[0]}!`)
+      await refreshRole()
+
+      if (data.data.user_role === 'admin') {
+        router.push('/admin/dashboard')
+      } else {
+        router.push('/dashboard')
+      }
+    } catch (err) {
+      toast.error('Login failed. Please try again.')
       setLoading(false)
     }
   }

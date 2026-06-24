@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(process.env.JWT_SECRET),
+      new TextEncoder().encode(process.env.AUTH_SECRET),
     );
 
     const [users] = await pool.query(
