@@ -13,6 +13,14 @@ function getTodayString() {
   return new Date().toISOString().split('T')[0]
 }
 
+// A slot on today's date is "past" once its start time has already gone by
+function isSlotPast(selectedDate, slot) {
+  if (selectedDate !== getTodayString()) return false
+  const slotStart = slot.split('-')[0]
+  const slotStartDate = new Date(`${selectedDate}T${slotStart}:00`)
+  return slotStartDate.getTime() <= Date.now()
+}
+
 const TYPE_COLORS = {
   room:      'bg-blue-100 text-blue-700',
   court:     'bg-orange-100 text-orange-700',
@@ -241,14 +249,16 @@ export default function FacilityDetailPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                     {TIME_SLOTS.map(slot => {
                       const booked = bookedSlots.includes(slot)
+                      const past = !booked && isSlotPast(selectedDate, slot)
                       const selected = selectedSlot === slot
                       return (
                         <button
                           key={slot}
-                          disabled={booked || slotsLoading}
+                          disabled={booked || past || slotsLoading}
                           onClick={() => setSelectedSlot(slot)}
+                          title={past ? 'This time slot has already passed' : undefined}
                           className={`py-2.5 px-2 rounded-xl text-xs font-semibold text-center transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400
-                            ${booked
+                            ${booked || past
                               ? 'bg-gray-100 text-gray-300 cursor-not-allowed line-through'
                               : selected
                               ? 'bg-emerald-600 text-white hover:bg-emerald-700'

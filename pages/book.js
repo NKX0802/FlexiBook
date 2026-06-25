@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import {
   ArrowLeft, Building2, Calendar, Clock, Users,
-  CheckCircle2, ChevronRight, Loader2,
+  CheckCircle2, ChevronRight, Loader2, AlertTriangle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -19,6 +19,9 @@ export default function BookPage() {
   const [confirmed, setConfirmed] = useState(false)
   const [bookingId, setBookingId] = useState(null)
   const [error, setError] = useState(null)
+  const [qrData, setQrData] = useState(null)
+  const [qrLoading, setQrLoading] = useState(false)
+  const [qrError, setQrError] = useState(null)
 
   // Fetch facility info and current user once router is ready
   useEffect(() => {
@@ -56,6 +59,34 @@ export default function BookPage() {
 
     fetchData()
   }, [router.isReady, facilityId])
+
+  // Fetch the real check-in QR code once the booking is confirmed
+  useEffect(() => {
+    if (!bookingId) return
+
+    let active = true
+    async function loadQR() {
+      setQrLoading(true)
+      setQrError(null)
+      try {
+        const res = await fetch(`/api/bookings/qr?id=${bookingId}`)
+        const data = await res.json()
+        if (!active) return
+        if (data.success) {
+          setQrData(data.data)
+        } else {
+          setQrError(data.message || 'Failed to generate QR code.')
+        }
+      } catch {
+        if (active) setQrError('Failed to load QR code. Please try again.')
+      } finally {
+        if (active) setQrLoading(false)
+      }
+    }
+
+    loadQR()
+    return () => { active = false }
+  }, [bookingId])
 
   async function handleConfirm(e) {
     e.preventDefault()
@@ -170,29 +201,20 @@ export default function BookPage() {
               Booking ID: <span className="font-bold text-gray-700">#{bookingId}</span>
             </p>
 
-            {/* QR placeholder */}
+            {/* Real check-in QR code */}
             <div className="inline-flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
-              <div className="w-32 h-32 bg-white border border-gray-300 rounded-lg flex items-center justify-center">
-                <svg viewBox="0 0 100 100" width="100" height="100" className="opacity-80">
-                  <rect x="10" y="10" width="30" height="30" rx="3" fill="#059669"/>
-                  <rect x="60" y="10" width="30" height="30" rx="3" fill="#059669"/>
-                  <rect x="10" y="60" width="30" height="30" rx="3" fill="#059669"/>
-                  <rect x="17" y="17" width="16" height="16" fill="white"/>
-                  <rect x="67" y="17" width="16" height="16" fill="white"/>
-                  <rect x="17" y="67" width="16" height="16" fill="white"/>
-                  <rect x="60" y="60" width="8" height="8" fill="#059669"/>
-                  <rect x="72" y="60" width="8" height="8" fill="#059669"/>
-                  <rect x="60" y="72" width="8" height="8" fill="#059669"/>
-                  <rect x="72" y="72" width="8" height="8" fill="#059669"/>
-                  <rect x="84" y="72" width="6" height="6" fill="#059669"/>
-                  <rect x="45" y="10" width="8" height="8" fill="#059669"/>
-                  <rect x="45" y="26" width="8" height="8" fill="#059669"/>
-                  <rect x="45" y="45" width="8" height="8" fill="#059669"/>
-                  <rect x="10" y="45" width="8" height="8" fill="#059669"/>
-                  <rect x="26" y="45" width="8" height="8" fill="#059669"/>
-                </svg>
+              <div className="w-32 h-32 bg-white border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+                {qrLoading && <Loader2 size={24} className="animate-spin text-emerald-500" />}
+                {qrError && !qrLoading && (
+                  <AlertTriangle size={24} className="text-red-400" />
+                )}
+                {qrData && !qrLoading && !qrError && (
+                  <img src={qrData.qr_data_url} alt="Booking QR Code" className="w-full h-full object-contain" />
+                )}
               </div>
-              <p className="text-[10px] text-gray-400 font-medium">Check-in QR Code</p>
+              <p className="text-[10px] text-gray-400 font-medium">
+                {qrError || 'Check-in QR Code'}
+              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">

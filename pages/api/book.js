@@ -33,6 +33,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'Group size must be at least 1.' })
   }
 
+  // ── Reject slots that have already started (Malaysia time, UTC+8) ─────────
+  const [slotStartStr] = booking_time_slot.split('-')
+  const [slotHourStr, slotMinStr] = slotStartStr.split(':')
+  const [yearStr, monthStr, dayStr] = String(booking_date).split('-')
+  const bookingStartMYT = new Date(Date.UTC(
+    parseInt(yearStr, 10), parseInt(monthStr, 10) - 1, parseInt(dayStr, 10),
+    parseInt(slotHourStr, 10), parseInt(slotMinStr, 10), 0
+  ))
+  const actualBookingStartUTC = new Date(bookingStartMYT.getTime() - (8 * 60 * 60 * 1000))
+  if (actualBookingStartUTC.getTime() <= Date.now()) {
+    return res.status(400).json({ success: false, error: 'This time slot has already passed. Please choose a different time.' })
+  }
+
   try {
     // Get a dedicated connection for the transaction
     const connection = await pool.getConnection()

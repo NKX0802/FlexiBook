@@ -43,7 +43,8 @@ export default async function handler(req, res) {
   try {
     // 4. Look up the booking this token belongs to (not scoped to the caller)
     const [bookings] = await pool.query(
-      `SELECT b.booking_id, b.booking_date, b.booking_time_slot, b.booking_status,
+      `SELECT b.booking_id, DATE_FORMAT(b.booking_date, '%Y-%m-%d') AS booking_date,
+              b.booking_time_slot, b.booking_status,
               b.checked_in_at, b.no_show_marked_at,
               f.facility_name, u.user_name
        FROM bookings b
@@ -66,12 +67,7 @@ export default async function handler(req, res) {
     // 5. Get current time in Malaysia timezone (UTC+8) for date/diff matching
     const now = new Date()
 
-    let dateStr
-    if (booking.booking_date instanceof Date) {
-      dateStr = booking.booking_date.toISOString().split('T')[0]
-    } else {
-      dateStr = String(booking.booking_date).split('T')[0]
-    }
+    const dateStr = booking.booking_date
 
     // Slot is like "10:00-11:00", split to get start time "10:00"
     const slotStart = booking.booking_time_slot.split('-')[0]
