@@ -81,7 +81,6 @@ smart-campus-facility-booking-system/
 │   ├── favourites.js             → /favourites
 │   ├── book.js                   → /book
 │   ├── bookings.js               → /bookings      (history)
-│   ├── checkin.js                → /checkin       (QR scan)
 │   ├── notifications.js          → /notifications
 │   │
 │   ├── rooms/

@@ -35,8 +35,8 @@ The system must run **live 24/7** (deployed on Vercel).
 | DB driver   | **mysql2**                                             | Use the shared connection helper in `lib/`                           |
 | Charts      | **recharts**                                           | For the admin dashboard                                              |
 | Icons       | **lucide-react**                                       |                                                                      |
-| QR generate | **qrcode**                                             | Makes one QR per facility                                            |
-| QR scan     | **html5-qrcode**                                       | Opens phone camera in the browser (needs HTTPS — Vercel provides it) |
+| QR generate | **qrcode**                                             | Makes a unique QR per booking, shown on the user dashboard           |
+| QR scan     | **html5-qrcode**                                       | Used on the admin "Scan QR" page; opens the camera (needs HTTPS — Vercel provides it) |
 | Deployment  | **Vercel**                                             | Auto-deploys the `main` branch                                       |
 
 **Why Node.js and not PHP:** the goal is a live 24/7 site on Vercel, which supports
@@ -126,6 +126,9 @@ so it's always clear what they link to.
 | booking_status        | VARCHAR  | 15   |                 | NOT NULL (`booked` / `checked-in` / `no-show` / `cancelled`) |
 | booking_cancel_reason | VARCHAR  | 255  |                 | **NULL** (only set when cancelled)                           |
 | booking_created_at    | DATETIME | —    |                 | NOT NULL                                                     |
+| checked_in_at         | DATETIME | —    |                 | NULL (set when admin scans the booking in)                  |
+| no_show_marked_at     | DATETIME | —    |                 | NULL (set when marked as no-show)                            |
+| checkin_token         | VARCHAR  | 255  |                 | NULL (unique token encoded in the booking's QR code)         |
 
 ### favourites
 
@@ -222,12 +225,16 @@ No-Show Report (users with too many no-shows)
   the same `facility_id` + `booking_date` + `booking_time_slot` that is NOT cancelled.
   If yes, block it.
 - **Group-size rule:** `booking_group_size` must not exceed `facility_capacity`.
-- **QR check-in:** one fixed QR per facility, encoding the `facility_id`. The student
-  scans it; the system checks they have a valid booking for that facility within 15
-  minutes of the slot start, then sets `booking_status = checked-in`.
-- **No-show rule:** if no check-in within 15 minutes of the slot start, the booking
-  becomes `no-show` (simplest approach: check the time difference on demand, e.g. when
-  the dashboard loads or a check-in is attempted).
+- **QR check-in:** each `booked` booking gets its own QR code (generated via
+  `GET /api/bookings/qr`), encoding a unique `checkin_token` saved on the booking row.
+  The **student** shows this QR from their dashboard; an **admin** scans it from
+  `/admin/qr-scan`, which calls `POST /api/checkin/verify`. That endpoint requires
+  `user_role = 'admin'` (403 otherwise), looks up the booking by `checkin_token`
+  (not by who is scanning), and if scanned within 15 minutes of the slot start sets
+  `booking_status = checked-in`.
+- **No-show rule:** if `/api/checkin/verify` is called more than 15 minutes after the
+  slot start on a still-`booked` booking, it's marked `no-show` instead (checked on
+  demand at scan time — there's no background job).
 - **Notifications:** `user_id` set = message to one user (e.g. "your booking was
   cancelled"); `user_id` NULL = broadcast to everyone (e.g. "Court A closed for repairs").
 

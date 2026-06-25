@@ -1,17 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
 import {
   QrCode, CheckCircle2, XCircle, Camera, RefreshCw,
-  Clock, AlertTriangle, ArrowLeft, Loader2
+  Clock, AlertTriangle, Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useRole } from '@/lib/roleContext'
+import AdminLayout from '@/components/AdminLayout'
 
-export default function QRCheckinPage() {
-  const { user, loading: authLoading } = useRole()
-  const router = useRouter()
-
+export default function AdminQRScanPage() {
   const [scanning, setScanning] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [scanResult, setScanResult] = useState(null) // { success, error, message }
@@ -128,53 +123,10 @@ export default function QRCheckinPage() {
     }
   }
 
-  // ── Auth Loading Screen ───────────────────────────────────────────────────
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-emerald-500" />
-      </div>
-    )
-  }
-
-  // ── Login Guard Screen ────────────────────────────────────────────────────
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-green-50 pt-16 flex items-center justify-center">
-        <div className="text-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm max-w-sm w-full mx-4">
-          <XCircle size={40} className="text-red-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-gray-900 mb-1" style={{ fontFamily: 'Nunito, sans-serif' }}>
-            Access Denied
-          </h2>
-          <p className="text-sm text-gray-500 mb-5">You must be logged in to access QR Check-In.</p>
-          <Link href="/login" className="inline-flex items-center justify-center w-full px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-green-50 pt-16">
-      <div className="max-w-lg mx-auto px-4 sm:px-6 py-8 sm:py-10">
-
-        {/* Back navigation */}
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-emerald-700 transition-colors mb-5 group"
-        >
-          <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-          Back to Dashboard
-        </Link>
-
-        {/* Header */}
-        <div className="mb-7 text-center">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
-            QR Check-In
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Scan the QR code placed at the facility to check in</p>
-        </div>
+    <AdminLayout title="Scan QR">
+      <div className="max-w-lg mx-auto">
+        <p className="text-sm text-gray-500 mb-6">Scan a student's booking QR code to check them in</p>
 
         {/* Core Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
@@ -193,8 +145,8 @@ export default function QRCheckinPage() {
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-1">Point your camera at the facility QR code</p>
-                  <p className="text-xs text-gray-400 mb-6">Check in within 15 minutes of your booking start time</p>
+                  <p className="text-sm text-gray-600 mb-1">Point the camera at the booking QR code</p>
+                  <p className="text-xs text-gray-400 mb-6">Check-in is valid within 15 minutes of the booking start time</p>
                 </>
               )}
 
@@ -213,7 +165,7 @@ export default function QRCheckinPage() {
               <div className="relative mx-auto w-full max-w-sm rounded-2xl overflow-hidden shadow-inner bg-black aspect-square mb-5">
                 <div id="qr-reader" className="w-full h-full" />
               </div>
-              <p className="text-sm font-semibold text-gray-700 animate-pulse">Scanning facility QR code…</p>
+              <p className="text-sm font-semibold text-gray-700 animate-pulse">Scanning booking QR code…</p>
               <p className="text-xs text-gray-400 mt-1 mb-6">Align the QR code within the scanner frame</p>
 
               <button
@@ -230,7 +182,7 @@ export default function QRCheckinPage() {
             <div className="py-12">
               <Loader2 size={36} className="animate-spin text-emerald-500 mx-auto mb-4" />
               <p className="text-sm font-semibold text-gray-700">Verifying check-in…</p>
-              <p className="text-xs text-gray-400 mt-1">Please wait while we check your bookings</p>
+              <p className="text-xs text-gray-400 mt-1">Please wait while we check the bookings</p>
             </div>
           )}
 
@@ -297,6 +249,6 @@ export default function QRCheckinPage() {
           )}
         </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }

@@ -8,6 +8,7 @@ import {
   Calendar,
   AlertCircle,
   Bell,
+  QrCode,
   User,
   Menu,
   X,
@@ -25,6 +26,7 @@ const ADMIN_LINKS = [
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/noshows", label: "No-Shows", icon: AlertCircle },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/qr-scan", label: "Scan QR", icon: QrCode },
 ];
 
 function NavLink({ href, label, icon: Icon, active }) {

@@ -5,7 +5,6 @@ import {
   Building2,
   LayoutDashboard,
   Bell,
-  QrCode,
   Star,
   User,
   Menu,
@@ -23,7 +22,6 @@ const STUDENT_LINKS = [
   { href: "/facilities", label: "Facilities", icon: Building2 },
   { href: "/favourites", label: "Favourites", icon: Star },
   { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/qr-check-in", label: "QR Check-in", icon: QrCode },
 ];
 
 export default function Navbar() {

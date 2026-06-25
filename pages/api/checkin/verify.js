@@ -1,6 +1,6 @@
 // API: POST /api/checkin/verify
-// Accepts a scanned QR value containing facility_id
-// Checks if the logged-in student has an active booking for this facility today
+// Accepts a scanned QR value containing a per-booking checkin_token
+// Only admins may call this — they scan a student's booking QR to check them in
 // Applies the 15-minute check-in grace period
 
 import { pool } from '@/lib/db'
@@ -11,10 +11,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'method_not_allowed', message: 'Method not allowed' })
   }
 
-  // 1. Authenticate user
+  // 1. Authenticate — must be a logged-in admin
   const user = await getUser(req)
   if (!user) {
     return res.status(401).json({ success: false, error: 'unauthorized', message: 'You must be logged in.' })
+  }
+  if (user.user_role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'forbidden', message: 'Only admins can check in bookings.' })
   }
 
   // 2. Read scanned QR code value from request body
@@ -23,116 +26,103 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'invalid_qr', message: 'Invalid QR code.' })
   }
 
-  // 3. Parse facility_id from qrValue (support facility_id=X or plain X)
-  let facilityId = null
+  // 3. Parse checkin_token from qrValue (support checkin_token=X or plain X)
   const strVal = String(qrValue).trim()
-  if (/^\d+$/.test(strVal)) {
-    facilityId = parseInt(strVal, 10)
-  } else if (strVal.includes('facility_id=')) {
-    const match = strVal.match(/facility_id=(\d+)/)
+  let token = strVal
+  if (strVal.includes('checkin_token=')) {
+    const match = strVal.match(/checkin_token=(.+)/)
     if (match) {
-      facilityId = parseInt(match[1], 10)
+      token = match[1].trim()
     }
   }
 
-  if (!facilityId || isNaN(facilityId)) {
+  if (!token) {
     return res.status(400).json({ success: false, error: 'invalid_qr', message: 'Invalid QR code.' })
   }
 
   try {
-    // 4. Get current time in Malaysia timezone (UTC+8) for "today" date matching
-    const now = new Date()
-    const mytTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-    const todayStr = mytTime.toISOString().split('T')[0] // YYYY-MM-DD
-
-    // 5. Query user's bookings for this facility today
+    // 4. Look up the booking this token belongs to (not scoped to the caller)
     const [bookings] = await pool.query(
-      `SELECT booking_id, booking_date, booking_time_slot, booking_status, checked_in_at, no_show_marked_at
-       FROM bookings
-       WHERE user_id = ? AND facility_id = ? AND booking_date = ?`,
-      [user.user_id, facilityId, todayStr]
+      `SELECT b.booking_id, b.booking_date, b.booking_time_slot, b.booking_status,
+              b.checked_in_at, b.no_show_marked_at,
+              f.facility_name, u.user_name
+       FROM bookings b
+       JOIN facilities f ON f.facility_id = b.facility_id
+       JOIN users u ON u.user_id = b.user_id
+       WHERE b.checkin_token = ?`,
+      [token]
     )
 
     if (bookings.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'no_booking',
-        message: 'No valid booking found for this facility today.',
+        message: 'No booking found for this QR code.',
       })
     }
 
-    // 6. Normalize date comparison & compute diff in minutes from booking start time
-    const bookingsWithDiff = bookings.map(b => {
-      let dateStr = todayStr
-      if (b.booking_date) {
-        if (b.booking_date instanceof Date) {
-          dateStr = b.booking_date.toISOString().split('T')[0]
-        } else {
-          dateStr = String(b.booking_date).split('T')[0]
-        }
-      }
+    const booking = bookings[0]
 
-      // Slot is like "10:00-11:00", split to get start time "10:00"
-      const slotStart = b.booking_time_slot.split('-')[0]
-      const [hourStr, minStr] = slotStart.split(':')
-      const hour = parseInt(hourStr, 10)
-      const min = parseInt(minStr, 10)
+    // 5. Get current time in Malaysia timezone (UTC+8) for date/diff matching
+    const now = new Date()
 
-      // Create UTC Date representing the local time, then adjust to actual UTC timestamp
-      const bookingDateParts = dateStr.split('-')
-      const bookingStartMYT = new Date(Date.UTC(
-        parseInt(bookingDateParts[0], 10),
-        parseInt(bookingDateParts[1], 10) - 1,
-        parseInt(bookingDateParts[2], 10),
-        hour,
-        min,
-        0
-      ))
-      const actualBookingStartUTC = new Date(bookingStartMYT.getTime() - (8 * 60 * 60 * 1000))
-
-      // Diff in minutes (positive means current time is after start time, negative means before)
-      const diffMins = (now.getTime() - actualBookingStartUTC.getTime()) / (60 * 1000)
-
-      return {
-        ...b,
-        diffMins,
-      }
-    })
-
-    // 7. Update late 'booked' bookings to 'no-show' in the DB
-    let newlyMarkedNoShow = false
-    for (const b of bookingsWithDiff) {
-      if (b.booking_status === 'booked' && b.diffMins > 15) {
-        await pool.query(
-          `UPDATE bookings
-           SET booking_status = 'no-show', no_show_marked_at = NOW()
-           WHERE booking_id = ?`,
-          [b.booking_id]
-        )
-        b.booking_status = 'no-show'
-        newlyMarkedNoShow = true
-      }
+    let dateStr
+    if (booking.booking_date instanceof Date) {
+      dateStr = booking.booking_date.toISOString().split('T')[0]
+    } else {
+      dateStr = String(booking.booking_date).split('T')[0]
     }
 
-    // 8. Find booking matches
-    // A: Look for active booking in 15 minute checkin window
-    const activeBooking = bookingsWithDiff.find(
-      b => b.booking_status === 'booked' && b.diffMins >= 0 && b.diffMins <= 15
-    )
+    // Slot is like "10:00-11:00", split to get start time "10:00"
+    const slotStart = booking.booking_time_slot.split('-')[0]
+    const [hourStr, minStr] = slotStart.split(':')
+    const hour = parseInt(hourStr, 10)
+    const min = parseInt(minStr, 10)
 
-    if (activeBooking) {
+    // Create UTC Date representing the local time, then adjust to actual UTC timestamp
+    const bookingDateParts = dateStr.split('-')
+    const bookingStartMYT = new Date(Date.UTC(
+      parseInt(bookingDateParts[0], 10),
+      parseInt(bookingDateParts[1], 10) - 1,
+      parseInt(bookingDateParts[2], 10),
+      hour,
+      min,
+      0
+    ))
+    const actualBookingStartUTC = new Date(bookingStartMYT.getTime() - (8 * 60 * 60 * 1000))
+
+    // Diff in minutes (positive means current time is after start time, negative means before)
+    const diffMins = (now.getTime() - actualBookingStartUTC.getTime()) / (60 * 1000)
+
+    // 6. If still 'booked' but more than 15 min late, mark as no-show
+    let status = booking.booking_status
+    let newlyMarkedNoShow = false
+    if (status === 'booked' && diffMins > 15) {
+      await pool.query(
+        `UPDATE bookings
+         SET booking_status = 'no-show', no_show_marked_at = NOW()
+         WHERE booking_id = ?`,
+        [booking.booking_id]
+      )
+      status = 'no-show'
+      newlyMarkedNoShow = true
+    }
+
+    // 7. Resolve outcome
+    if (status === 'booked' && diffMins >= 0 && diffMins <= 15) {
       await pool.query(
         `UPDATE bookings
          SET booking_status = 'checked-in', checked_in_at = NOW()
          WHERE booking_id = ?`,
-        [activeBooking.booking_id]
+        [booking.booking_id]
       )
-      return res.status(200).json({ success: true, message: 'Check-in successful.' })
+      return res.status(200).json({
+        success: true,
+        message: `Checked in: ${booking.user_name} — ${booking.facility_name}`,
+      })
     }
 
-    // B: Look if already checked in
-    const checkedInBooking = bookingsWithDiff.find(b => b.booking_status === 'checked-in')
-    if (checkedInBooking) {
+    if (status === 'checked-in') {
       return res.status(400).json({
         success: false,
         error: 'already_checked_in',
@@ -140,28 +130,23 @@ export default async function handler(req, res) {
       })
     }
 
-    // C: Look if too early (future booking today)
-    const earlyBooking = bookingsWithDiff.find(b => b.booking_status === 'booked' && b.diffMins < 0)
-    if (earlyBooking) {
+    if (status === 'booked' && diffMins < 0) {
       return res.status(400).json({
         success: false,
         error: 'too_early',
-        message: 'Too early to check in. Please check in when your booking time starts.',
+        message: 'Too early to check in. Please scan again when the booking time starts.',
       })
     }
 
-    // D: Was it just marked as no-show?
     if (newlyMarkedNoShow) {
       return res.status(400).json({
         success: false,
         error: 'no_show_late',
-        message: 'You are more than 15 minutes late. This booking has been marked as no-show.',
+        message: `${booking.user_name} is more than 15 minutes late. This booking has been marked as no-show.`,
       })
     }
 
-    // E: Was it already marked as no-show?
-    const noShowBooking = bookingsWithDiff.find(b => b.booking_status === 'no-show')
-    if (noShowBooking) {
+    if (status === 'no-show') {
       return res.status(400).json({
         success: false,
         error: 'already_no_show',
@@ -169,9 +154,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // F: Was it cancelled?
-    const cancelledBooking = bookingsWithDiff.find(b => b.booking_status === 'cancelled')
-    if (cancelledBooking) {
+    if (status === 'cancelled') {
       return res.status(400).json({
         success: false,
         error: 'cancelled',
@@ -179,11 +162,10 @@ export default async function handler(req, res) {
       })
     }
 
-    // G: Fallback
     return res.status(400).json({
       success: false,
       error: 'no_booking',
-      message: 'No valid booking found for this facility today.',
+      message: 'No valid booking found for this QR code.',
     })
 
   } catch (err) {
