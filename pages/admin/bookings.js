@@ -8,6 +8,13 @@ import { Skeleton, SkeletonRow } from '@/components/Skeleton'
 const STATUS_FILTERS = ['all', 'booked', 'checked-in', 'no-show', 'cancelled']
 const EDITABLE_STATUSES = ['booked', 'no-show']
 
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  const [year, month, day] = String(dateStr).slice(0, 10).split('-')
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return `${parseInt(day)} ${months[parseInt(month) - 1]} ${year}`
+}
+
 // Statuses an admin can change a booking TO
 const STATUS_OPTIONS = [
   { value: 'booked',     label: 'Booked' },
@@ -206,7 +213,7 @@ export default function AdminBookingsPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
                     <p><span className="text-gray-400">Facility:</span> {b.facility_name}</p>
                     <p><span className="text-gray-400">Group:</span> {b.booking_group_size}</p>
-                    <p><span className="text-gray-400">Date:</span> {b.booking_date}</p>
+                    <p><span className="text-gray-400">Date:</span> {formatDate(b.booking_date)}</p>
                     <p><span className="text-gray-400">Time:</span> {b.booking_time_slot}</p>
                   </div>
                   {editable && (
@@ -265,7 +272,7 @@ export default function AdminBookingsPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-700 text-xs whitespace-nowrap">{b.facility_name}</td>
                       <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
-                        <div>{b.booking_date}</div>
+                        <div>{formatDate(b.booking_date)}</div>
                         <div className="text-gray-400">{b.booking_time_slot}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 text-xs text-center">{b.booking_group_size}</td>
