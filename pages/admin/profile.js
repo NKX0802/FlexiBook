@@ -16,8 +16,10 @@ export default function AdminProfilePage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -39,6 +41,10 @@ export default function AdminProfilePage() {
       toast.error('Original password is required to change your password.')
       return
     }
+    if (password && password !== confirmPassword) {
+      toast.error('New password and confirm password do not match.')
+      return
+    }
     setSaving(true)
     const res = await fetch('/api/profile', {
       method: 'PUT',
@@ -58,6 +64,7 @@ export default function AdminProfilePage() {
     }
 
     setPassword('')
+    setConfirmPassword('')
     setCurrentPassword('')
     await refreshRole()
     toast.success('Profile updated successfully!')
@@ -162,6 +169,30 @@ export default function AdminProfilePage() {
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm new password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirm new password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm hover:border-primary-300 dark:hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition placeholder-gray-300 text-gray-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(s => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
